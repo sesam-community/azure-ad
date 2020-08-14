@@ -12,7 +12,7 @@ from plan_dao import get_plans, get_tasks
 from str_utils import str_to_bool
 from user_dao import sync_user_array, get_all_users
 from group_dao import sync_group_array, get_all_groups
-from dao_helper import init_dao, get_all_objects, init_dao_on_behalf_on, stream_as_json
+from dao_helper import init_dao, get_all_objects, init_dao_on_behalf_on, stream_as_json, make_request, GRAPH_URL, ALLOWED_METHODS
 from logger_helper import log_request
 
 env = os.environ.get
@@ -127,6 +127,28 @@ def post_groups():
     sync_group_array(json.loads(r.data))
     return Response('')
 
+@APP.route('/graphapi/<path:path>', methods=ALLOWED_METHODS)
+@log_request
+def generic_graph_api_request(path=None):
+    """
+    Generic Endpoint to call Microsoft Graph API.
+    Any request in Microsoft Graph API can be issued here.
+    :return: 200 for successful GET requests
+             200 and malformed json for erronous GET requests
+             code and response from graghapi for other cases
+    """
+    if r.args.get('auth') and r.args.get('auth') == 'user':
+        init_dao_on_behalf_on(env('client_id'), env('client_secret'), env('tenant_id'), env('username'),
+                              env('password'))
+    else:
+        init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
+    if r.method.lower() == 'get':
+        response = Response(stream_as_json(get_all_objects(f'/{path}')), content_type=CT)
+    else:
+        url=f'{GRAPH_URL}/{path}'
+        data=json.loads(r.data) if r.data else None
+        response = Response(make_request(url=url, method=r.method, data=data), content_type=CT)
+    return response
 
 @APP.route('/auth', methods=['GET'])
 @log_request
