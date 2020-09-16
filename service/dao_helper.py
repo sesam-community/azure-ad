@@ -57,7 +57,7 @@ def make_request(url: str, method: str, data=None) -> dict:
         api_call_response.raise_for_status()
     except requests.exceptions.HTTPError as error:
         logging.error(f'{error} with text {error.response.text}')
-        raise Exception(api_call_response.status_code, error.response.text)
+        raise error
 
     return json.loads(api_call_response.text) if len(api_call_response.text) > 0 else {}
 

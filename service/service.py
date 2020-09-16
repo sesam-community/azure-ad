@@ -6,6 +6,7 @@ import os
 import json
 import uuid
 from flask import Flask, Response, request as r, redirect, session
+from requests.exceptions import HTTPError
 
 from auth_helper import get_authorize_url, get_token_with_auth_code, add_token_to_cache
 from plan_dao import get_plans, get_tasks
@@ -147,7 +148,12 @@ def generic_graph_api_request(path=None):
     else:
         url=f'{GRAPH_URL}/{path}'
         data=json.loads(r.data) if r.data else None
-        response = Response(make_request(url=url, method=r.method, data=data), content_type=CT)
+
+        try:
+            response_data = make_request(url=url, method=r.method, data=data)
+        except HTTPError as error:
+            response = Response(error.response.text, content_type=CT, status=error.response.status_code)
+
     return response
 
 @APP.route('/auth', methods=['GET'])
