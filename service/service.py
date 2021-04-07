@@ -104,14 +104,18 @@ def post_users():
     Endpoint to synchronize users from Sesam into Azure AD
     :return: 200 empty response if everything OK
     """
-    if r.args.get('auth') and r.args.get('auth') == 'user':
-        init_dao_on_behalf_on(env('client_id'), env('client_secret'), env('tenant_id'), env('username'),
-                              env('password'))
-    else:
-        init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
-    sync_user_array(json.loads(r.data))
-    return Response('')
-
+    try:
+        if r.args.get('auth') and r.args.get('auth') == 'user':
+            init_dao_on_behalf_on(env('client_id'), env('client_secret'), env('tenant_id'), env('username'),
+                                  env('password'))
+        else:
+            init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
+        sync_user_array(json.loads(r.data))
+        response = Response('')
+    except HTTPError as error:
+        logging.exception(error)
+        response = Response(error.response.text, content_type=CT, status=error.response.status_code)
+    return response
 
 @APP.route('/datasets/group', methods=['POST'])
 @log_request
@@ -120,13 +124,19 @@ def post_groups():
     Endpoint to synchronize groups from Sesam into Azure AD
     :return: 200 empty response if everything OK
     """
-    if r.args.get('auth') and r.args.get('auth') == 'user':
-        init_dao_on_behalf_on(env('client_id'), env('client_secret'), env('tenant_id'), env('username'),
-                              env('password'))
-    else:
-        init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
-    sync_group_array(json.loads(r.data))
-    return Response('')
+    try:
+        if r.args.get('auth') and r.args.get('auth') == 'user':
+            init_dao_on_behalf_on(env('client_id'), env('client_secret'), env('tenant_id'), env('username'),
+                                  env('password'))
+        else:
+            init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
+        sync_group_array(json.loads(r.data))
+        response = Response('')
+    except HTTPError as error:
+        logging.exception(error)
+        response = Response(error.response.text, content_type=CT, status=error.response.status_code)
+
+    return response
 
 @APP.route('/graphapi/<path:path>', methods=ALLOWED_METHODS)
 @log_request
@@ -143,16 +153,17 @@ def generic_graph_api_request(path=None):
                               env('password'))
     else:
         init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
-    if r.method.lower() == 'get':
-        response = Response(stream_as_json(get_all_objects(f'/{path}')), content_type=CT)
-    else:
-        url=f'{GRAPH_URL}/{path}'
-        data=json.loads(r.data) if r.data else None
+    try:
+        if r.method.lower() == 'get':
+            response = Response(stream_as_json(get_all_objects(f'/{path}')), content_type=CT, status=200)
+        else:
+            url=f'{GRAPH_URL}/{path}'
+            data=json.loads(r.data) if r.data else None
 
-        try:
-            response_data = make_request(url=url, method=r.method, data=data)
-        except HTTPError as error:
-            response = Response(error.response.text, content_type=CT, status=error.response.status_code)
+            response = Response(json.dumps(make_request(url=url, method=r.method, data=data)), content_type=CT, status=200)
+    except HTTPError as error:
+        logging.exception(error)
+        response = Response(error.response.text, content_type=CT, status=error.response.status_code)
 
     return response
 
