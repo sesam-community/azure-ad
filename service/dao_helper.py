@@ -3,7 +3,7 @@ import requests
 import json
 import os
 from auth_helper import get_token, get_token_on_behalf_on_user
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, urlencode
 
 # Available values: v1.0, beta
 GRAPH_URL = f'https://graph.microsoft.com/{os.environ.get("API_VERSION", "v1.0")}'
@@ -62,7 +62,7 @@ def make_request(url: str, method: str, data=None) -> dict:
     return json.loads(api_call_response.text) if len(api_call_response.text) > 0 else {}
 
 
-def get_all_objects(resource_path: str, delta=None):
+def get_all_objects(resource_path: str, delta=None, params=None):
     """
     Fetch and stream back objects from MS Graph API
     :param resource_path path to needed resource in MS Graph API
@@ -70,10 +70,15 @@ def get_all_objects(resource_path: str, delta=None):
     More about delta https://docs.microsoft.com/en-us/graph/delta-query-users
     :return: generated output with all fetched objects
     """
-    url = GRAPH_URL + resource_path
-
+    query = []
     if delta:
-        url += f'?$deltatoken={delta}'
+        query.append(("$deltatoken", delta))
+    if params:
+        for k,v in params.items():
+            if k.lower() not in ["limit", "since", "auth", "code"]:
+                query.append((k,v))
+
+    url = GRAPH_URL + resource_path + "?" + urlencode(query)
 
     while url is not None:
         result = make_request(url, 'get')

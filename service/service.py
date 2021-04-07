@@ -155,7 +155,7 @@ def generic_graph_api_request(path=None):
         init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
     try:
         if r.method.lower() == 'get':
-            response = Response(stream_as_json(get_all_objects(f'/{path}')), content_type=CT, status=200)
+            response = Response(stream_as_json(get_all_objects(f'/{path}', params=r.args)), content_type=CT, status=200)
         else:
             url=f'{GRAPH_URL}/{path}'
             data=json.loads(r.data) if r.data else None
