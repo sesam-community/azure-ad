@@ -110,7 +110,7 @@ def post_users():
                                   env('password'))
         else:
             init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
-        sync_user_array(json.loads(r.data))
+        sync_user_array(json.loads(r.data), str_to_bool(r.args.get("force_delete")))
         response = Response('')
     except HTTPError as error:
         logging.exception(error)

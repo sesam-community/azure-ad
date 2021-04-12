@@ -75,7 +75,7 @@ def get_all_objects(resource_path: str, delta=None, params=None):
         query.append(("$deltatoken", delta))
     if params:
         for k,v in params.items():
-            if k.lower() not in ["limit", "since", "auth", "code"]:
+            if k.lower() not in ["limit", "since", "auth", "code", "force_delete"]:
                 query.append((k,v))
 
     url = GRAPH_URL + resource_path + "?" + urlencode(query)

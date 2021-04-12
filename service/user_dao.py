@@ -6,11 +6,11 @@ from dao_helper import get_all_objects, make_request, GRAPH_URL, is_object_alrea
 RESOURCE_PATH = '/users/'
 
 
-def sync_user_array(user_data_array: list) -> None:
+def sync_user_array(user_data_array: list, do_force_delete=False) -> None:
     """
     Function to synchronize user array from Sesam into Azure Active Directory
     This function will try to create user first and update it if create operation failed
-    This function will also disable users with _deleted property = true
+    This function will also disable users with _deleted property = true or delete them if force_delete is true
     :param user_data_array: array of user objects
     :return: nothing if everything is OK
     """
@@ -46,10 +46,10 @@ def sync_user_array(user_data_array: list) -> None:
         make_request(f'{GRAPH_URL}{RESOURCE_PATH}{user_id}', 'PATCH', user_data)
         logging.info(f'user {user_id} updated successfully')
 
-    def __try_delete(user_data: dict) -> None:
+    def __try_delete(user_data: dict, do_force_delete) -> None:
         """
-        Internal function to 'delete' user (We will not actually perform delete operation but only
-        disable user account by setting accountEnabled = false
+        Internal function to disable/delete user
+        If force_delete is on, delete user for good, otherwise disable user account by setting accountEnabled = false
         :param user_data: json object with user details, must contain user identifier
         (id or userPrincipalName property)
         :return: void
@@ -58,13 +58,16 @@ def sync_user_array(user_data_array: list) -> None:
         if not user_id:
             raise Exception("Couldn't find id for user, at least id or userPrincipalName needed")
 
-        logging.info(f'trying to disable user {user_id}')
-        make_request(f'{GRAPH_URL}{RESOURCE_PATH}{user_id}', 'PATCH', {'accountEnabled': False})
-        logging.info(f'user {user_id} disabled successfully')
+        logging.info(f'trying to disable/delete user {user_id}')
+        if do_force_delete:
+            make_request(f'{GRAPH_URL}{RESOURCE_PATH}{user_id}', 'DELETE')
+        else:
+            make_request(f'{GRAPH_URL}{RESOURCE_PATH}{user_id}', 'PATCH', {'accountEnabled': False})
+        logging.info(f'user {user_id} disabled/deleted successfully')
 
     for user in user_data_array:
         if '_deleted' in user and user['_deleted']:
-            __try_delete(user)
+            __try_delete(user, do_force_delete)
             continue
 
         user = clear_sesam_attributes(user)

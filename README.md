@@ -48,7 +48,9 @@ By default all queries executed with `odata.metadata=minimal`. This behavior may
  * **/datasets/<path:kind>/entities** : methods=['GET'], get objects of given type from MS graph API
  * **/planner/plans/entities** , methods=['GET'], get all plans from Microsoft Planner service
  * **/planner/tasks/entities** , methods=['GET'], get all tasks from Microsoft Planner service
- * **/datasets/user** : methods=['POST'], create or update or delete(disable) users. Handles create/update/disable operation based on the precence of _id_ field, or 'resource exists' error, or \_deleted value
+ * **/datasets/user** : methods=['POST'], create or update or delete or disable users. Performs create/update operation based on the presence of _id_ field or encountering 'resource exists' error; performs disable/delete based on \_deleted value combined with query params.  
+      Query params:
+    * _force_delete_ : set to 'true' to delete user instead of disabling
  * **/datasets/group** : methods=['POST'], same as /datasets/user handler but for _group_ object
  * **/graphapi/&lt;path:path&gt;** : methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], Generic route for MS graph API. Call it in the same way as you would call the graph API directly except that you don't need to think about authorization. Returns 200 for all GET requests even if error occurs, and for all successful calls. Returns 500 for erronous calls.
  * **/auth** : methods=['GET'], signs in user interactively by using Microsoft login page
