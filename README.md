@@ -1,6 +1,5 @@
 # azure-ad
-[![Build Status](https://travis-ci.org/sesam-community/azure-ad.svg?branch=master)](https://travis-ci.org/sesam-community/azure-ad)
-
+[![SesamCommunity CI&CD](https://github.com/sesam-community/azure-ad/actions/workflows/sesam-community-ci-cd.yml/badge.svg)](https://github.com/sesam-community/azure-ad/actions/workflows/sesam-community-ci-cd.yml)
 Sesam - Microsoft Graph API connector that can serve both as a source or sink.
 Features:
   * supports the whole Graph API as is
