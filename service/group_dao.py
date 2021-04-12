@@ -52,7 +52,10 @@ def sync_group_array(group_data_array):
 
         group = clear_sesam_attributes(group)
         try:
-            __try_create(group)
+            if 'id' not in group:
+                __try_create(group)
+            else:
+                __try_update(group)            
         except Exception as e:
             if is_object_already_exists_exception(e):
                 __try_update(group)

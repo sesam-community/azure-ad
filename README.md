@@ -1,9 +1,15 @@
 # azure-ad
 [![Build Status](https://travis-ci.org/sesam-community/azure-ad.svg?branch=master)](https://travis-ci.org/sesam-community/azure-ad)
 
-Sesam datasource and sink uses Microsoft Graph to read and write users and groups to Azure AD
+Sesam - Microsoft Graph API connector that can serve both as a source or sink.
+Features:
+  * supports the whole Graph API as is
+  * offers dedicated URL routes for _user_, _group_ and _planner_ operations. See "URL paths" section below.
+  * implements cached authentication
+  * streams results for GET requests
+  * handles paging implicitly
 
-### Azure AD access 
+### Azure AD access
 
 To be able to communicate with Azure AD we need to register an applicaiton in Azure AD and obtain client id and client secret needed for Oauth:
 
@@ -35,8 +41,21 @@ You may control MS Graph API version with environmental variable `API_VERSION`
 By default all queries executed with `odata.metadata=minimal`. This behavior may be changed by using  environmental variable `ODATA_METADATA` (available values: `none`, `minimal`, `full`).
 
 
+### URL paths
 
-### System setup 
+ * **/datasets/user/entities** : methods=['GET'], get users
+ * **/datasets/group/entities** : methods=['GET'], get groups
+ * **/datasets/<path:kind>/entities** : methods=['GET'], get objects of given type from MS graph API
+ * **/planner/plans/entities** , methods=['GET'], get all plans from Microsoft Planner service
+ * **/planner/tasks/entities** , methods=['GET'], get all tasks from Microsoft Planner service
+ * **/datasets/user** : methods=['POST'], create or update or delete or disable users. Performs create/update operation based on the presence of _id_ field or encountering 'resource exists' error; performs disable/delete based on \_deleted value combined with query params.  
+      Query params:
+    * _force_delete_ : set to 'true' to delete user instead of disabling
+ * **/datasets/group** : methods=['POST'], same as /datasets/user handler but for _group_ object
+ * **/graphapi/&lt;path:path&gt;** : methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], Generic route for MS graph API. Call it in the same way as you would call the graph API directly except that you don't need to think about authorization. Returns 200 for all GET requests even if error occurs, and for all successful calls. Returns 500 for erronous calls.
+ * **/auth** : methods=['GET'], signs in user interactively by using Microsoft login page
+
+### System setup
 
 ```json
 {
@@ -150,6 +169,31 @@ Read more [here](https://docs.microsoft.com/en-us/graph/api/resources/user?view=
       "default": [
         ["copy", "*"],
         ["add", "jobTitle", "programmer"]
+      ]
+    }
+  }
+}
+
+```
+
+```json
+{
+  "_id": "<pipe id>",
+  "type": "pipe",
+  "source": {
+    "type": "dataset",
+    "dataset": "<source dataset name>"
+  },
+  "sink": {
+    "type": "json",
+    "system": "<sink system id>",
+    "url": "/graphapi/applications"
+  },
+  "transform": {
+    "type": "dtl",
+    "rules": {
+      "default": [
+        ["add", "displayName", "Display name"]
       ]
     }
   }

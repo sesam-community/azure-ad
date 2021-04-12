@@ -3,12 +3,12 @@ import requests
 import json
 import os
 from auth_helper import get_token, get_token_on_behalf_on_user
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, urlencode
 
 # Available values: v1.0, beta
 GRAPH_URL = f'https://graph.microsoft.com/{os.environ.get("API_VERSION", "v1.0")}'
 
-ALLOWED_METHODS = ['get', 'post', 'put', 'patch']
+ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
 METADATA = os.environ.get('ODATA_METADATA', 'minimal')
 
@@ -33,7 +33,7 @@ def make_request(url: str, method: str, data=None) -> dict:
     :param data: request payload for POST/PUT/PATCH requests
     :return: decoded JSON object
     """
-    if method.lower() not in ALLOWED_METHODS:
+    if method.upper() not in ALLOWED_METHODS:
         raise Exception(f'Method {method} is not allowed')
 
     if not __token:
@@ -56,14 +56,13 @@ def make_request(url: str, method: str, data=None) -> dict:
     try:
         api_call_response.raise_for_status()
     except requests.exceptions.HTTPError as error:
-        logging.error(error)
-        logging.error(error.response.text)
+        logging.error(f'{error} with text {error.response.text}')
         raise error
 
     return json.loads(api_call_response.text) if len(api_call_response.text) > 0 else {}
 
 
-def get_all_objects(resource_path: str, delta=None):
+def get_all_objects(resource_path: str, delta=None, params=None):
     """
     Fetch and stream back objects from MS Graph API
     :param resource_path path to needed resource in MS Graph API
@@ -71,31 +70,36 @@ def get_all_objects(resource_path: str, delta=None):
     More about delta https://docs.microsoft.com/en-us/graph/delta-query-users
     :return: generated output with all fetched objects
     """
-    url = GRAPH_URL + resource_path
-
+    query = []
     if delta:
-        url += f'?$deltatoken={delta}'
+        query.append(("$deltatoken", delta))
+    if params:
+        for k,v in params.items():
+            if k.lower() not in ["limit", "since", "auth", "code", "force_delete"]:
+                query.append((k,v))
+
+    url = GRAPH_URL + resource_path + "?" + urlencode(query)
 
     while url is not None:
         result = make_request(url, 'get')
-
-        logging.debug(f"Got response: {json.dumps(result, indent=4, sort_keys=True)}")
+        url = result.get('@odata.nextLink', None)
 
         if result.get('@odata.deltaLink'):
             parsed_url = urlparse(result.get('@odata.deltaLink'))
             query = parse_qs(parsed_url.query)
             delta = query['$deltatoken'][0]
 
-        if type(result.get('value')) == list:
-            for item in result['value']:
-                item['_updated'] = delta
-                item['_id'] = item['id']
-                yield item
-        else:
-            raise ValueError(f'value object expected in response to url: {url} got {result}')
+        #if 'value' field is found and is of type 'list', assume it has requested entities
+        if ((result.get('value') and isinstance(result.get('value'),list))
+            or result.get('value') == []):
+            result = result.get('value')
+        if type(result) != list:
+            result = [result]
 
-        url = result.get('@odata.nextLink', None)
-
+        for item in result:
+            item['_updated'] = delta
+            item['_id'] = item['id']
+            yield item
 
 def get_object(resource_path):
     url = GRAPH_URL + resource_path
