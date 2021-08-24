@@ -52,7 +52,7 @@ def make_request(url: str, method: str, data=None) -> dict:
 
     call_method = getattr(requests, method.lower())
     api_call_response = call_method(url, headers=headers, verify=True, json=data)
-
+    
     try:
         api_call_response.raise_for_status()
     except requests.exceptions.HTTPError as error:
@@ -79,7 +79,7 @@ def get_all_objects(resource_path: str, delta=None, params=None):
                 query.append((k,v))
 
     url = GRAPH_URL + resource_path + "?" + urlencode(query)
-
+    last_item = None
     while url is not None:
         result = make_request(url, 'get')
         url = result.get('@odata.nextLink', None)
@@ -95,10 +95,13 @@ def get_all_objects(resource_path: str, delta=None, params=None):
             result = result.get('value')
         if type(result) != list:
             result = [result]
+        if result == [] and last_item:
+            result = [last_item]
 
         for item in result:
             item['_updated'] = delta
             item['_id'] = item['id']
+            last_item = item
             yield item
 
 def get_object(resource_path):
