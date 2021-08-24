@@ -83,10 +83,10 @@ def sync_user_array(user_data_array: list, do_force_delete=False) -> None:
                 raise Exception from e
 
 
-def get_all_users(delta=None):
+def get_all_users(delta=None, params=None):
     """
     Fetch and stream back users from Azure AD via MS Graph API
     :param delta: delta token from last request
     :return: generated JSON output with all fetched users
     """
-    yield from stream_as_json(get_all_objects(f'{RESOURCE_PATH}delta', delta))
+    yield from stream_as_json(get_all_objects(f'{RESOURCE_PATH}delta', delta, params=params))
