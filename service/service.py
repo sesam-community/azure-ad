@@ -38,7 +38,7 @@ def list_users():
     :return: JSON array with fetched users
     """
     init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
-    return Response(get_all_users(r.args.get('since')), content_type=CT)
+    return Response(get_all_users(r.args.get('since'), r.args), content_type=CT)
 
 
 @APP.route('/datasets/group/entities', methods=['GET'])
@@ -50,7 +50,7 @@ def list_groups():
     :return: JSON array with fetched groups
     """
     init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
-    return Response(get_all_groups(r.args.get('since')), content_type=CT)
+    return Response(get_all_groups(r.args.get('since'),r.args), content_type=CT)
 
 
 @APP.route('/datasets/<path:kind>/entities', methods=['GET'])
@@ -67,7 +67,7 @@ def list_objects(kind):
     else:
         init_dao(env('client_id'), env('client_secret'), env('tenant_id'))
     return Response(
-        stream_as_json(get_all_objects(f'/{kind}/{"delta" if SUPPORTS_SINCE else ""}', r.args.get('since'))),
+        stream_as_json(get_all_objects(f'/{kind}/{"delta" if SUPPORTS_SINCE else ""}', r.args.get('since'), r.args)),
         content_type=CT)
 
 

@@ -63,10 +63,10 @@ def sync_group_array(group_data_array):
                 raise Exception from e
 
 
-def get_all_groups(delta=None):
+def get_all_groups(delta=None, params=None):
     """
     Fetch and stream back groups from Azure AD via MS Graph API
     :param delta: delta token from last request
     :return: generated JSON output with all fetched groups
     """
-    yield from stream_as_json(get_all_objects(f'{RESOURCE_PATH}delta', delta))
+    yield from stream_as_json(get_all_objects(f'{RESOURCE_PATH}delta', delta, params=params))
